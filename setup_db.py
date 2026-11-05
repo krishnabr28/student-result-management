@@ -17,7 +17,7 @@ import mysql.connector
 from werkzeug.security import generate_password_hash
 
 from app.config import load_config
-from app.demo import DEMO_PASSWORDS
+from app.demo import DEFAULT_PASSWORDS, DEMO_PASSWORDS
 from app.rules import (
     ValidationError,
     calculate_grade,
@@ -129,6 +129,11 @@ def create_schema(cur):
 
 
 def seed_demo(cur):
+    for role, password in DEMO_PASSWORDS.items():
+        try:
+            check_password(password)
+        except ValidationError as exc:
+            sys.exit(f"DEMO_{role.upper()}_PASSWORD: {exc}")
     now = datetime.now(timezone.utc).replace(tzinfo=None, microsecond=0)
     ids = {}
     for username, full_name, role in STAFF:
@@ -278,9 +283,14 @@ def main():
         print("Log in as 'admin' with the password you just entered.")
     else:
         print("Demo data loaded. Demo logins:")
-        print(f"  Admin    admin / {DEMO_PASSWORDS['admin']}")
-        print(f"  Faculty  faculty / {DEMO_PASSWORDS['faculty']}")
-        print(f"  Student  241203106130 / {DEMO_PASSWORDS['student']}")
+        for label, username, role in (
+            ("Admin", "admin", "admin"),
+            ("Faculty", "faculty", "faculty"),
+            ("Student", "241203106130", "student"),
+        ):
+            custom = DEMO_PASSWORDS[role] != DEFAULT_PASSWORDS[role]
+            shown = f"(password from DEMO_{role.upper()}_PASSWORD)" if custom else DEMO_PASSWORDS[role]
+            print(f"  {label:<8} {username} / {shown}")
 
 
 if __name__ == "__main__":
