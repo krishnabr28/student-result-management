@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, category_icon, empty_state, csrf with context %}
+{% block title %}Announcements{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Announcements & notices</h1>
+    <p>Send examination notices, deadlines and announcements. Recipients see them in their notification bell.</p>
+  </div>
+</div>
+
+<div class="grid grid-2">
+  <section class="card" aria-labelledby="sent-title">
+    <div class="card-head"><div><h2 id="sent-title">Sent notifications</h2><p>Broadcasts to students and faculty</p></div></div>
+    {% if sent %}
+    <ul class="list">
+      {% for n in sent %}
+      <li class="notif-row">
+        {{ category_icon(n.category) }}
+        <div class="notif-body">
+          <strong class="notif-title">{{ n.title }}</strong>
+          <p class="notif-excerpt">{{ n.message }}</p>
+          <div class="notif-meta">
+            <span class="badge badge-muted badge-plain">{{ categories[n.category] }}</span>
+            <span class="badge badge-info badge-plain">{{ audiences[n.audience] }}</span>
+            {% if n.priority == "important" %}<span class="badge badge-accent">Important</span>{% endif %}
+            <span title="{{ n.created_at|datetime }}">{{ n.created_at|ago }}</span>
+            <span>· {{ n.author or "Deleted user" }}</span>
+            <span>· Read by {{ n.read_count }}</span>
+          </div>
+        </div>
+        {% if current_user.role == "admin" or n.created_by == current_user.id %}
+        <div class="notif-side">
+          <form method="post" action="{{ url_for('notifications.delete_announcement', notification_id=n.id) }}"
+                data-confirm="“{{ n.title }}” will be removed for every recipient." data-confirm-title="Delete this notification?" data-confirm-ok="Delete">
+            {{ csrf() }}
+            <button class="icon-btn" type="submit" data-no-loading aria-label="Delete “{{ n.title }}”" title="Delete">{{ icon("trash", "icon-sm") }}</button>
+          </form>
+        </div>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+      {{ empty_state("megaphone", "No announcements yet", "Use the form to send your first notice to students.") }}
+    {% endif %}
+  </section>
+
+  <section class="card" aria-labelledby="new-title">
+    <div class="card-head"><div><h2 id="new-title">New notification</h2><p>Delivered instantly after sending</p></div></div>
+    <div class="card-body">
+      <form class="form" method="post">
+        {{ csrf() }}
+        <div class="field">
+          <label for="title">Title <span class="req" aria-hidden="true">*</span></label>
+          <input class="input" id="title" name="title" value="{{ form.title or '' }}" required minlength="3" maxlength="150" placeholder="e.g. Viva schedule released">
+        </div>
+        <div class="field">
+          <label for="message">Message <span class="req" aria-hidden="true">*</span></label>
+          <textarea class="textarea" id="message" name="message" required minlength="5" maxlength="5000" placeholder="Write the details students need to know">{{ form.message or '' }}</textarea>
+        </div>
+        <div class="form-grid">
+          <div class="field">
+            <label for="category">Type</label>
+            <select class="select" id="category" name="category">
+              {% for key in postable %}<option value="{{ key }}"{% if form.category == key %} selected{% endif %}>{{ categories[key] }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="field">
+            <label for="audience">Send to</label>
+            <select class="select" id="audience" name="audience">
+              {% for key, label in audiences.items() %}<option value="{{ key }}"{% if (form.audience or "students") == key %} selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select>
+          </div>
+        </div>
+        <label class="check"><input type="checkbox" name="important" value="1"{% if form.important %} checked{% endif %}> Mark as important</label>
+        <div class="form-actions">
+          <button class="btn btn-primary" type="submit">{{ icon("send", "icon-sm") }} Send notification</button>
+        </div>
+      </form>
+    </div>
+  </section>
+</div>
+{% endblock %}

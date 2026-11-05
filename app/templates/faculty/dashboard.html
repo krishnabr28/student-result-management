@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, status_badge, empty_state %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Welcome, {{ current_user.full_name }}</h1>
+    <p>Overview of minor project results for the 2026-2027 session.</p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-secondary" href="{{ url_for('notifications.announcements') }}">{{ icon("megaphone", "icon-sm") }} New announcement</a>
+    <a class="btn btn-primary" href="{{ url_for('faculty.add_student') }}">{{ icon("plus", "icon-sm") }} Add student</a>
+  </div>
+</div>
+
+<div class="grid grid-stats">
+  <a class="card stat stat-link" href="{{ url_for('faculty.students') }}">
+    <div class="stat-label"><span class="stat-icon">{{ icon("users", "icon-sm") }}</span> Total students</div>
+    <div class="stat-value">{{ stats.students }}</div>
+    <div class="stat-note">Registered for minor project</div>
+  </a>
+  <a class="card stat stat-link" href="{{ url_for('faculty.students') }}">
+    <div class="stat-label"><span class="stat-icon">{{ icon("award", "icon-sm") }}</span> Results published</div>
+    <div class="stat-value">{{ stats.published }}</div>
+    <div class="stat-note">{{ stats.passed|int }} passed · {{ stats.failed }} failed</div>
+  </a>
+  <a class="card stat stat-link" href="{{ url_for('faculty.students', status='pending') }}">
+    <div class="stat-label"><span class="stat-icon">{{ icon("hourglass", "icon-sm") }}</span> Pending results</div>
+    <div class="stat-value">{{ stats.pending }}</div>
+    <div class="stat-note">Marks not entered yet</div>
+  </a>
+  <div class="card stat">
+    <div class="stat-label"><span class="stat-icon">{{ icon("chart", "icon-sm") }}</span> Pass rate</div>
+    <div class="stat-value">{{ "%d%%"|format(stats.pass_rate) if stats.pass_rate is not none else "–" }}</div>
+    <div class="stat-note">Average score {{ "%.2f%%"|format(stats.average) if stats.average is not none else "–" }}</div>
+  </div>
+</div>
+
+<div class="grid grid-2 section-gap">
+  <div class="stack">
+    <section class="card">
+      <div class="card-head">
+        <div><h2>Recently published</h2><p>Latest results entered or updated</p></div>
+        <a class="btn btn-ghost btn-sm" href="{{ url_for('faculty.students') }}">View all</a>
+      </div>
+      {% if recent %}
+      <div class="table-wrap">
+        <table class="table table-cards">
+          <thead><tr><th>Student</th><th class="num">Percentage</th><th>Grade</th><th>Status</th><th>Updated</th></tr></thead>
+          <tbody>
+            {% for s in recent %}
+            <tr>
+              <td class="cell-primary"><div class="cell-title">{{ s.student_name }}</div><div class="cell-sub mono">{{ s.roll_no }}</div></td>
+              <td class="num" data-label="Percentage">{{ s.percentage }}%</td>
+              <td data-label="Grade"><span class="grade">{{ s.grade }}</span></td>
+              <td data-label="Status">{{ status_badge(s.status) }}</td>
+              <td data-label="Updated" class="muted nowrap" title="{{ s.updated_at|datetime }}">{{ s.updated_at|ago }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        {{ empty_state("award", "No results yet", "Results you enter will appear here.", url_for('faculty.students'), "Enter a result") }}
+      {% endif %}
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div><h2>Waiting for marks</h2><p>Students whose result is still pending</p></div>
+        <a class="btn btn-ghost btn-sm" href="{{ url_for('faculty.students', status='pending') }}">View pending</a>
+      </div>
+      {% if pending %}
+      <ul class="list">
+        {% for s in pending %}
+        <li class="list-item">
+          <span class="rank">{{ icon("hourglass", "icon-sm") }}</span>
+          <div class="grow"><div class="cell-title truncate">{{ s.student_name }}</div><div class="cell-sub truncate">{{ s.roll_no }} · {{ s.topic }}</div></div>
+          <a class="btn btn-secondary btn-sm" href="{{ url_for('faculty.result', student_id=s.id) }}">Enter marks</a>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+        {{ empty_state("check", "All results entered", "Every registered student has a published result.") }}
+      {% endif %}
+    </section>
+  </div>
+
+  <div class="stack">
+    <section class="card">
+      <div class="card-head"><div><h2>Result overview</h2><p>{{ stats.students }} students</p></div></div>
+      <div class="card-body">
+        {% set total = stats.students or 1 %}
+        <div class="split-bar" role="img" aria-label="{{ stats.passed|int }} passed, {{ stats.failed }} failed, {{ stats.pending }} pending">
+          {% if stats.passed|int %}<span class="split-pass" style="width:{{ stats.passed|int * 100 / total }}%"></span>{% endif %}
+          {% if stats.failed %}<span class="split-fail" style="width:{{ stats.failed * 100 / total }}%"></span>{% endif %}
+          {% if stats.pending %}<span class="split-pending" style="width:{{ stats.pending * 100 / total }}%"></span>{% endif %}
+        </div>
+        <div class="legend">
+          <span><i class="split-pass"></i> Pass {{ stats.passed|int }}</span>
+          <span><i class="split-fail"></i> Fail {{ stats.failed }}</span>
+          <span><i class="split-pending"></i> Pending {{ stats.pending }}</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><div><h2>Grade distribution</h2><p>Number of students per grade</p></div></div>
+      <div class="card-body">
+        <div class="bars">
+          {% for row in distribution %}
+          <div class="bar-row">
+            <span class="grade">{{ row.grade }}</span>
+            <div class="bar-track" role="img" aria-label="Grade {{ row.grade }}: {{ row.count }} students"><div class="bar-fill{% if row.grade == 'F' %} is-fail{% endif %}" style="width:{{ row.share }}%"></div></div>
+            <span class="bar-count">{{ row.count }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><div><h2>Top performers</h2><p>Highest percentage</p></div></div>
+      {% if top %}
+      <ul class="list">
+        {% for s in top %}
+        <li class="list-item">
+          <span class="rank">{{ loop.index }}</span>
+          <div class="grow"><div class="cell-title truncate">{{ s.student_name }}</div><div class="cell-sub">{{ s.roll_no }}</div></div>
+          <strong>{{ s.percentage }}%</strong>
+          <span class="grade">{{ s.grade }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+        {{ empty_state("chart", "Nothing to rank yet", "Top scores appear once results are published.") }}
+      {% endif %}
+    </section>
+  </div>
+</div>
+{% endblock %}

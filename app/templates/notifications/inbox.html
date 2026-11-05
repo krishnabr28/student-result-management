@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, category_icon, empty_state, csrf with context %}
+{% block title %}Notifications{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Notifications</h1>
+    <p>{% if unread_count %}You have {{ unread_count }} unread notification{{ "" if unread_count == 1 else "s" }}.{% else %}You are all caught up.{% endif %}</p>
+  </div>
+  {% if unread_count %}
+  <div class="page-actions">
+    <form method="post" action="{{ url_for('notifications.mark_all_read') }}">
+      {{ csrf() }}<input type="hidden" name="next" value="{{ request.full_path.rstrip('?') }}">
+      <button class="btn btn-secondary" type="submit">{{ icon("check-all", "icon-sm") }} Mark all as read</button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+
+<section class="card">
+  <div class="toolbar">
+    <nav class="chips" aria-label="Read status">
+      <a class="chip" href="{{ url_for('notifications.inbox', category=category) }}"{% if show != "unread" %} aria-current="true"{% endif %}>All</a>
+      <a class="chip" href="{{ url_for('notifications.inbox', show='unread', category=category) }}"{% if show == "unread" %} aria-current="true"{% endif %}>Unread <span class="count">{{ unread_count }}</span></a>
+    </nav>
+    <nav class="chips" aria-label="Category">
+      <a class="chip" href="{{ url_for('notifications.inbox', show=show if show == 'unread' else None) }}"{% if not category %} aria-current="true"{% endif %}>All types</a>
+      {% for key, label in categories.items() %}
+      <a class="chip" href="{{ url_for('notifications.inbox', show=show if show == 'unread' else None, category=key) }}"{% if category == key %} aria-current="true"{% endif %}>{{ label }}</a>
+      {% endfor %}
+    </nav>
+  </div>
+
+  {% if items %}
+  <ul class="list">
+    {% for n in items %}
+    <li class="notif-row{% if n.read_at is none %} is-unread{% endif %}">
+      {{ category_icon(n.category) }}
+      <div class="notif-body">
+        <a class="notif-title" href="{{ url_for('notifications.detail', notification_id=n.id) }}">{% if n.read_at is none %}<span class="sr-only">Unread: </span>{% endif %}{{ n.title }}</a>
+        <p class="notif-excerpt">{{ n.message }}</p>
+        <div class="notif-meta">
+          <span class="badge badge-muted badge-plain">{{ categories[n.category] }}</span>
+          {% if n.priority == "important" %}<span class="badge badge-accent">Important</span>{% endif %}
+          <span title="{{ n.created_at|datetime }}">{{ n.created_at|ago }}</span>
+          {% if n.author %}<span>· {{ n.author }}</span>{% endif %}
+        </div>
+      </div>
+      <div class="notif-side">
+        {% if n.read_at is none %}
+        <form method="post" action="{{ url_for('notifications.mark_read', notification_id=n.id) }}">
+          {{ csrf() }}<input type="hidden" name="next" value="{{ request.full_path.rstrip('?') }}">
+          <button class="icon-btn" type="submit" data-no-loading aria-label="Mark “{{ n.title }}” as read" title="Mark as read">{{ icon("check", "icon-sm") }}</button>
+        </form>
+        {% else %}
+        <form method="post" action="{{ url_for('notifications.mark_unread', notification_id=n.id) }}">
+          {{ csrf() }}<input type="hidden" name="next" value="{{ request.full_path.rstrip('?') }}">
+          <button class="icon-btn" type="submit" data-no-loading aria-label="Mark “{{ n.title }}” as unread" title="Mark as unread">{{ icon("mail-open", "icon-sm") }}</button>
+        </form>
+        {% endif %}
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% elif show == "unread" %}
+    {{ empty_state("check-all", "No unread notifications", "You have read everything. New results and notices will appear here.") }}
+  {% elif category %}
+    {{ empty_state("inbox", "Nothing in this category", "There are no " ~ categories[category]|lower ~ " notifications yet.") }}
+  {% else %}
+    {{ empty_state("bell", "No notifications yet", "Results, examination notices and announcements will appear here.") }}
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% from "_macros.html" import icon %}
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div class="flash-stack" role="status" aria-live="polite">
+    {% for category, message in messages %}
+      {% set kind = category if category in ("success", "error", "info") else "info" %}
+      <div class="flash flash-{{ kind }} glass">
+        {{ icon({"success": "check", "error": "alert", "info": "info"}[kind]) }}
+        <p>{{ message }}</p>
+        <button class="icon-btn" type="button" data-dismiss aria-label="Dismiss message">{{ icon("x", "icon-sm") }}</button>
+      </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+{% endwith %}

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+{% block title %}{{ title }}{% endblock %}
+{% block shell %}
+{% if current_user %}{{ super() }}{% else %}
+<main class="page" id="main">{{ self.content() }}</main>
+{% endif %}
+{% endblock %}
+{% block content %}
+<div class="error-page">
+  <div class="card">
+    <div class="card-body stack">
+      <div class="error-code">{{ code }}</div>
+      <h1>{{ title }}</h1>
+      <p class="muted">{{ message }}</p>
+      <div class="btn-row btn-row-center">
+        <a class="btn btn-primary" href="{{ (safe_local_path(request.path) if code == 503 else None) or url_for('auth.index') }}">{{ "Try again" if code == 503 else "Go to home page" }}</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

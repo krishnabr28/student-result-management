@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, csrf, status_badge with context %}
+{% set has_result = student.percentage is not none %}
+{% block title %}{{ "Update" if has_result else "Enter" }} result · {{ student.student_name }}{% endblock %}
+{% block content %}
+<a class="breadcrumb" href="{{ url_for('faculty.students') }}">{{ icon("arrow-left", "icon-sm") }} Students & results</a>
+<div class="page-head">
+  <div>
+    <h1>{{ "Update result" if has_result else "Enter result" }}</h1>
+    <p>{{ student.student_name }} · <span class="mono">{{ student.roll_no }}</span></p>
+  </div>
+  <div>{{ status_badge(student.status) }}</div>
+</div>
+
+<div class="grid grid-2">
+  <section class="card">
+    <div class="card-head"><div><h2>Marks</h2><p>Percentage and grade are calculated automatically.</p></div></div>
+    <div class="card-body">
+      <form class="form" method="post">
+        {{ csrf() }}
+        <div class="form-grid form-grid-keep">
+          <div class="field">
+            <label for="marks_obtained">Marks obtained <span class="req" aria-hidden="true">*</span></label>
+            <input class="input" id="marks_obtained" name="marks_obtained" value="{{ form.marks_obtained }}" inputmode="decimal" required autocomplete="off" placeholder="e.g. 86" autofocus>
+          </div>
+          <div class="field">
+            <label for="total_marks">Total marks <span class="req" aria-hidden="true">*</span></label>
+            <input class="input" id="total_marks" name="total_marks" value="{{ form.total_marks }}" inputmode="decimal" required autocomplete="off">
+          </div>
+          <div class="field span-2">
+            <label for="remarks">Remarks <span class="muted">(optional, shown to the student)</span></label>
+            <input class="input" id="remarks" name="remarks" value="{{ form.remarks }}" maxlength="255" placeholder="e.g. Good presentation and documentation">
+          </div>
+        </div>
+
+        <div class="preview" id="result-preview" aria-live="polite">
+          <div><span>Percentage</span><strong data-preview-pct>–</strong></div>
+          <div><span>Grade</span><strong data-preview-grade>–</strong></div>
+          <div><span>Status</span><strong data-preview-status>–</strong></div>
+        </div>
+        <p class="hint muted" id="preview-note">Enter marks to see the grade.</p>
+
+        <div class="form-actions">
+          <a class="btn btn-ghost" href="{{ url_for('faculty.students') }}">Cancel</a>
+          <button class="btn btn-primary" type="submit">{{ icon("send", "icon-sm") }} {{ "Update & notify student" if has_result else "Publish & notify student" }}</button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <aside class="stack">
+    <section class="card">
+      <div class="card-head"><h2>Student details</h2></div>
+      <div class="card-body">
+        <dl class="facts">
+          <div><dt>Course</dt><dd>{{ student.course }}</dd></div>
+          <div><dt>Company</dt><dd>{{ student.company }}</dd></div>
+          <div class="span-2"><dt>Project topic</dt><dd>{{ student.topic }}</dd></div>
+          {% if has_result %}
+          <div><dt>Current result</dt><dd>{{ student.marks_obtained|num }} / {{ student.total_marks|num }} ({{ student.percentage }}%)</dd></div>
+          <div><dt>Last updated</dt><dd>{{ student.updated_at|datetime }}{% if student.entered_by_name %} by {{ student.entered_by_name }}{% endif %}</dd></div>
+          {% endif %}
+        </dl>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-head"><h2>Grading scheme</h2></div>
+      <div class="card-body">
+        <table class="band-table">
+          <tbody>
+            <tr><td>90 – 100%</td><td>A+</td><td>Pass</td></tr>
+            <tr><td>80 – 89.99%</td><td>A</td><td>Pass</td></tr>
+            <tr><td>70 – 79.99%</td><td>B</td><td>Pass</td></tr>
+            <tr><td>60 – 69.99%</td><td>C</td><td>Pass</td></tr>
+            <tr><td>40 – 59.99%</td><td>D</td><td>Pass</td></tr>
+            <tr><td>Below 40%</td><td>F</td><td>Fail</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </aside>
+</div>
+{% endblock %}

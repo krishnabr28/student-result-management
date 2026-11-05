@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, status_badge, empty_state, csrf with context %}
+{% block title %}Students & results{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Students & results</h1>
+    <p>Search, enter marks, update results and manage student records.</p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-secondary" href="{{ url_for('faculty.export_csv', q=q or None, status=status if status != 'all' else None, course=course or None) }}">{{ icon("download", "icon-sm") }} Export CSV</a>
+    <a class="btn btn-primary" href="{{ url_for('faculty.add_student') }}">{{ icon("plus", "icon-sm") }} Add student</a>
+  </div>
+</div>
+
+<section class="card">
+  <form class="toolbar" method="get" role="search" aria-label="Search students">
+    <div class="search-box">
+      {{ icon("search") }}
+      <label class="sr-only" for="q">Search by name or roll number</label>
+      <input class="input" type="search" id="q" name="q" value="{{ q }}" placeholder="Search by name or roll number" maxlength="100">
+    </div>
+    <label class="sr-only" for="status">Result status</label>
+    <select class="select" id="status" name="status">
+      {% for value, label in [("all", "All statuses"), ("pass", "Pass"), ("fail", "Fail"), ("pending", "Pending")] %}
+      <option value="{{ value }}"{% if status == value %} selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    {% if courses|length > 1 %}
+    <label class="sr-only" for="course">Course</label>
+    <select class="select" id="course" name="course">
+      <option value="">All courses</option>
+      {% for c in courses %}<option{% if course == c %} selected{% endif %}>{{ c }}</option>{% endfor %}
+    </select>
+    {% endif %}
+    <button class="btn btn-secondary" type="submit">Search</button>
+    {% if q or status != "all" or course %}<a class="btn btn-ghost" href="{{ url_for('faculty.students') }}">Clear</a>{% endif %}
+  </form>
+
+  {% if students %}
+  <div class="table-wrap">
+    <table class="table table-cards">
+      <thead>
+        <tr>
+          <th>Roll no.</th><th>Student</th><th>Company</th><th class="num">Marks</th><th class="num">%</th><th>Grade</th><th>Status</th><th><span class="sr-only">Actions</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in students %}
+        <tr>
+          <td data-label="Roll no." class="mono nowrap">{{ s.roll_no }}</td>
+          <td class="cell-primary"><div class="cell-title">{{ s.student_name }}</div><div class="cell-sub">{{ s.course }} · {{ s.topic }}</div></td>
+          <td data-label="Company">{{ s.company }}</td>
+          <td data-label="Marks" class="num nowrap">{% if s.marks_obtained is not none %}{{ s.marks_obtained|num }} / {{ s.total_marks|num }}{% else %}<span class="muted">–</span>{% endif %}</td>
+          <td data-label="Percentage" class="num">{% if s.percentage is not none %}{{ s.percentage }}%{% else %}<span class="muted">–</span>{% endif %}</td>
+          <td data-label="Grade">{% if s.grade %}<span class="grade">{{ s.grade }}</span>{% else %}<span class="muted">–</span>{% endif %}</td>
+          <td data-label="Status">{{ status_badge(s.status) }}</td>
+          <td class="cell-actions">
+            <div class="row-actions">
+              <a class="btn btn-{{ 'primary' if s.status == 'Pending' else 'secondary' }} btn-sm" href="{{ url_for('faculty.result', student_id=s.id) }}">{{ icon("award", "icon-sm") }} {{ "Enter result" if s.status == "Pending" else "Update result" }}</a>
+              {% if s.status != "Pending" %}<a class="btn btn-ghost btn-sm" href="{{ url_for('faculty.result_pdf', student_id=s.id) }}" aria-label="Download result card PDF of {{ s.student_name }}">{{ icon("download", "icon-sm") }}<span class="sr-only">Download PDF</span></a>{% endif %}
+              <a class="btn btn-ghost btn-sm" href="{{ url_for('faculty.edit_student', student_id=s.id) }}" aria-label="Edit details of {{ s.student_name }}">{{ icon("edit", "icon-sm") }}<span class="sr-only">Edit</span></a>
+              <form method="post" action="{{ url_for('faculty.delete_student', student_id=s.id) }}"
+                    data-confirm="This permanently deletes {{ s.student_name }} ({{ s.roll_no }}), their login account and their result. This cannot be undone."
+                    data-confirm-title="Delete this student?" data-confirm-ok="Delete student">
+                {{ csrf() }}
+                <button class="btn btn-danger-ghost btn-sm" type="submit" aria-label="Delete {{ s.student_name }}">{{ icon("trash", "icon-sm") }}<span class="sr-only">Delete</span></button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="table-foot">Showing {{ students|length }} student{{ "" if students|length == 1 else "s" }}{% if q %} matching “{{ q }}”{% endif %}.</div>
+  {% elif q or status != "all" or course %}
+    {{ empty_state("search", "No matching students", "No student matches your search. Check the spelling or clear the filters.") }}
+  {% else %}
+    {{ empty_state("users", "No students yet", "Add your first student to start recording minor project results.", url_for('faculty.add_student'), "Add student") }}
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, csrf with context %}
+{% block title %}Log in{% endblock %}
+{% block shell %}
+<div class="theme-corner">
+  <button class="icon-btn glass" type="button" data-theme-toggle aria-label="Switch light or dark theme">
+    <span class="theme-icon-dark">{{ icon("sun") }}</span><span class="theme-icon-light">{{ icon("moon") }}</span>
+  </button>
+</div>
+{% include "_flashes.html" %}
+<main class="auth-page" id="main">
+  <section class="auth-intro">
+    <div class="logos">
+      <span class="logo-tile"><img src="{{ url_for('static', filename='img/ccsu.png') }}" alt="Chaudhary Charan Singh University, Meerut" width="56" height="56"></span>
+      <span class="logo-tile"><img src="{{ url_for('static', filename='img/gips.png') }}" alt="GNIOT Institute of Professional Studies" width="176" height="56"></span>
+    </div>
+    <span class="eyebrow">BCA Minor Project · 2026-2027</span>
+    <h1>Student Result Management System</h1>
+    <p class="lead">One place for faculty to record minor project marks, publish results and keep students informed.</p>
+    <ul class="feature-list">
+      <li><span class="stat-icon">{{ icon("percent", "icon-sm") }}</span> Automatic percentage, grade and Pass / Fail status</li>
+      <li><span class="stat-icon">{{ icon("search", "icon-sm") }}</span> Instant search by name or roll number</li>
+      <li><span class="stat-icon">{{ icon("bell", "icon-sm") }}</span> Result alerts, exam notices and announcements</li>
+    </ul>
+  </section>
+
+  <section class="auth-card glass" aria-labelledby="login-title">
+    <h2 id="login-title">Log in to your account</h2>
+    <p class="muted">Faculty use their username. Students use their roll number.</p>
+    <form class="form" method="post" novalidate>
+      {{ csrf() }}
+      <div class="field">
+        <label for="username">Username or roll number</label>
+        <input class="input" id="username" name="username" value="{{ username }}" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="50" required autofocus>
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <div class="input-group">
+          <input class="input" type="password" id="password" name="password" autocomplete="current-password" maxlength="128" required>
+          <button type="button" class="icon-btn" data-toggle-password aria-controls="password" aria-pressed="false" aria-label="Show password">{{ icon("eye", "icon-sm") }}</button>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-block" type="submit">Log in</button>
+    </form>
+
+    {% if demo_accounts %}
+    <div class="demo-box">
+      <h3>Demo accounts</h3>
+      <div class="demo-accounts">
+        {% for label, user, pw in demo_accounts %}
+        <button class="demo-account" type="button" data-demo-user="{{ user }}" data-demo-pass="{{ pw }}">{{ label }}<small>{{ user }}</small></button>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+    <p class="auth-footer">GNIOT Institute of Professional Studies, Greater Noida · CCSU, Meerut</p>
+  </section>
+</main>
+{% endblock %}

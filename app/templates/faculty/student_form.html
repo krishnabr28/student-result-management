@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, csrf, password_field with context %}
+{% set editing = student is not none %}
+{% block title %}{{ "Edit student" if editing else "Add student" }}{% endblock %}
+{% block content %}
+<a class="breadcrumb" href="{{ url_for('faculty.students') }}">{{ icon("arrow-left", "icon-sm") }} Students & results</a>
+<div class="page-head">
+  <div>
+    <h1>{{ "Edit " ~ student.student_name if editing else "Add a new student" }}</h1>
+    <p>{{ "Update the student's details or reset their password. Changing the roll number also changes their login username." if editing else "The roll number becomes the student's login username." }}</p>
+  </div>
+</div>
+
+<div class="grid grid-2">
+  <section class="card">
+    <div class="card-body">
+      <form class="form" method="post">
+        {{ csrf() }}
+        <div class="form-grid">
+          <div class="field">
+            <label for="roll_no">Roll number <span class="req" aria-hidden="true">*</span></label>
+            <input class="input mono" id="roll_no" name="roll_no" value="{{ form.roll_no or '' }}" required maxlength="20" pattern="[A-Za-z0-9\-]{3,20}" autocomplete="off" placeholder="241203106130" aria-describedby="roll-hint">
+            <span class="hint" id="roll-hint">3-20 letters, digits or '-'. Must be unique.</span>
+          </div>
+          <div class="field">
+            <label for="student_name">Student name <span class="req" aria-hidden="true">*</span></label>
+            <input class="input" id="student_name" name="student_name" value="{{ form.student_name or '' }}" required maxlength="100" autocomplete="off" placeholder="Full name">
+          </div>
+          <div class="field">
+            <label for="course">Course <span class="req" aria-hidden="true">*</span></label>
+            <input class="input" id="course" name="course" value="{{ form.course or 'BCA' }}" required maxlength="50" list="course-options">
+            <datalist id="course-options">{% for c in (courses + ["BCA", "BBA", "MCA", "B.Com"])|unique %}<option value="{{ c }}">{% endfor %}</datalist>
+          </div>
+          <div class="field">
+            <label for="company">Company / organisation <span class="req" aria-hidden="true">*</span></label>
+            <input class="input" id="company" name="company" value="{{ form.company or '' }}" required maxlength="100" placeholder="Where the project was done">
+          </div>
+          <div class="field span-2">
+            <label for="topic">Project topic <span class="req" aria-hidden="true">*</span></label>
+            <input class="input" id="topic" name="topic" value="{{ form.topic or '' }}" required maxlength="150" placeholder="e.g. Student Result Management System">
+          </div>
+        </div>
+
+        <div class="form-grid" role="group" aria-labelledby="pw-group">
+          <h3 class="span-2" id="pw-group">{{ "Reset password (optional)" if editing else "Student login password" }}</h3>
+          {{ password_field("password", "New password" if editing else "Initial password", required=not editing,
+                            hint="Leave blank to keep the current password." if editing else "At least 8 characters. Share it with the student.") }}
+          {{ password_field("confirm_password", "Confirm password", required=not editing) }}
+        </div>
+
+        <div class="form-actions">
+          <a class="btn btn-ghost" href="{{ url_for('faculty.students') }}">Cancel</a>
+          <button class="btn btn-primary order-last" type="submit">{{ icon("check", "icon-sm") }} {{ "Save changes" if editing else "Add student" }}</button>
+          {% if not editing %}<button class="btn btn-secondary" type="submit" name="next_action" value="result">Save & enter result</button>{% endif %}
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <aside class="stack">
+    {% if editing %}
+    <section class="card">
+      <div class="card-head"><h2>Current result</h2></div>
+      <div class="card-body stack">
+        {% if student.percentage is not none %}
+          <p><strong>{{ student.marks_obtained|num }} / {{ student.total_marks|num }}</strong> · {{ student.percentage }}% · Grade {{ student.grade }} · {{ student.status }}</p>
+        {% else %}
+          <p class="muted">No result entered yet.</p>
+        {% endif %}
+        <a class="btn btn-secondary" href="{{ url_for('faculty.result', student_id=student.id) }}">{{ icon("award", "icon-sm") }} {{ "Update result" if student.percentage is not none else "Enter result" }}</a>
+      </div>
+    </section>
+    {% endif %}
+    <div class="alert">
+      {{ icon("info") }}
+      <p>Students log in with their <strong>roll number</strong> and this password to see their result and notifications. {% if not editing %}A welcome notification is sent automatically.{% endif %}</p>
+    </div>
+  </aside>
+</div>
+{% endblock %}

@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, csrf, password_field, empty_state with context %}
+{% block title %}Staff accounts{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Staff accounts</h1>
+    <p>Create faculty and administrator logins, reset passwords and deactivate accounts.</p>
+  </div>
+</div>
+
+<div class="stack">
+  <section class="card" aria-labelledby="staff-title">
+    <div class="card-head"><div><h2 id="staff-title">Faculty & administrators</h2><p>{{ staff|length }} accounts</p></div></div>
+    {% if staff %}
+    <div class="table-wrap">
+      <table class="table table-cards">
+        <thead><tr><th>Name</th><th>Role</th><th>Status</th><th class="num">Results entered</th><th><span class="sr-only">Actions</span></th></tr></thead>
+        <tbody>
+          {% for u in staff %}
+          <tr>
+            <td class="cell-primary"><div class="cell-title">{{ u.full_name }}{% if u.id == current_user.id %} <span class="muted">(you)</span>{% endif %}</div><div class="cell-sub mono">{{ u.username }}</div></td>
+            <td data-label="Role"><span class="badge badge-plain {{ 'badge-accent' if u.role == 'admin' else 'badge-info' }}">{{ roles[u.role] }}</span></td>
+            <td data-label="Status"><span class="badge {{ 'badge-pass' if u.is_active else 'badge-muted' }}">{{ "Active" if u.is_active else "Deactivated" }}</span></td>
+            <td data-label="Results entered" class="num">{{ u.results_entered }}</td>
+            <td class="cell-actions">
+              <div class="row-actions">
+                <details class="reset">
+                  <summary class="btn btn-ghost btn-sm">{{ icon("key", "icon-sm") }} Reset password</summary>
+                  <form class="form reset-form" method="post" action="{{ url_for('admin.reset_password', user_id=u.id) }}">
+                    {{ csrf() }}
+                    <strong>New password for {{ u.username }}</strong>
+                    {{ password_field("pw-" ~ u.id, "New password", name="password") }}
+                    {{ password_field("pw2-" ~ u.id, "Confirm password", name="confirm_password") }}
+                    <button class="btn btn-primary btn-sm" type="submit">Save password</button>
+                  </form>
+                </details>
+                {% if u.id != current_user.id %}
+                <form method="post" action="{{ url_for('admin.toggle_active', user_id=u.id) }}"
+                      {% if u.is_active %}data-confirm="{{ u.full_name }} will no longer be able to log in until the account is activated again." data-confirm-title="Deactivate this account?" data-confirm-ok="Deactivate"{% endif %}>
+                  {{ csrf() }}
+                  <button class="btn btn-sm {{ 'btn-danger-ghost' if u.is_active else 'btn-secondary' }}" type="submit">{{ "Deactivate" if u.is_active else "Activate" }}</button>
+                </form>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      {{ empty_state("users", "No staff accounts", "Create the first faculty account using the form.") }}
+    {% endif %}
+  </section>
+
+  <section class="card" aria-labelledby="new-staff-title">
+    <div class="card-head"><div><h2 id="new-staff-title">Add staff account</h2><p>Student accounts are created from the Students page</p></div></div>
+    <div class="card-body">
+      <form class="form" method="post">
+        {{ csrf() }}
+        <div class="form-grid">
+        <div class="field">
+          <label for="full_name">Full name <span class="req" aria-hidden="true">*</span></label>
+          <input class="input" id="full_name" name="full_name" value="{{ form.full_name or '' }}" required maxlength="100" placeholder="e.g. Dr. Neha Gupta">
+        </div>
+        <div class="field">
+          <label for="username">Username <span class="req" aria-hidden="true">*</span></label>
+          <input class="input" id="username" name="username" value="{{ form.username or '' }}" required maxlength="50" autocapitalize="none" spellcheck="false" placeholder="e.g. neha.gupta">
+        </div>
+        <div class="field">
+          <label for="role">Role</label>
+          <select class="select" id="role" name="role">
+            {% for key, label in roles.items() %}<option value="{{ key }}"{% if (form.role or "faculty") == key %} selected{% endif %}>{{ label }}</option>{% endfor %}
+          </select>
+        </div>
+        <div></div>
+        {{ password_field("password", "Password", hint="At least 8 characters.") }}
+        {{ password_field("confirm_password", "Confirm password") }}
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" type="submit">{{ icon("plus", "icon-sm") }} Create account</button>
+        </div>
+      </form>
+    </div>
+  </section>
+</div>
+{% endblock %}

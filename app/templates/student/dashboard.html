@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, status_badge, category_icon, empty_state %}
+{% from "student/_student.html" import student_css, printer_icon, initials %}
+{% block title %}My result{% endblock %}
+{% block content %}
+{{ student_css() }}
+{% if not record %}
+<div class="page-head">
+  <div><h1>Hello, {{ current_user.full_name }}</h1></div>
+</div>
+<section class="card">
+  {{ empty_state("user", "No student record linked", "Your login is not linked to a student record yet. Please contact your faculty.") }}
+</section>
+{% else %}
+{% set published = record.percentage is not none %}
+<section class="card sp-profile" aria-labelledby="sp-name">
+  <div class="sp-profile-main">
+    <span class="sp-avatar" aria-hidden="true">{{ initials(record.student_name) }}</span>
+    <div class="sp-identity">
+      <p class="sp-eyebrow">Minor project · Session {{ session_name }}</p>
+      <h1 id="sp-name">{{ record.student_name }}</h1>
+      <p class="sp-meta"><span class="mono">{{ record.roll_no }}</span><span aria-hidden="true">·</span><span>{{ record.course }}</span><span aria-hidden="true">·</span><span>{{ record.company }}</span></p>
+    </div>
+    <div class="sp-profile-status">{{ status_badge(record.status) }}</div>
+  </div>
+  <div class="sp-actions" role="group" aria-label="Quick actions">
+    {% if published %}
+    <a class="btn btn-primary" href="{{ url_for('student.result_pdf') }}" download>{{ icon("download", "icon-sm") }} Download PDF</a>
+    <a class="btn btn-secondary" href="{{ url_for('student.result_card') }}">{{ printer_icon() }} View &amp; print</a>
+    {% else %}
+    <p class="sp-locked">{{ icon("hourglass", "icon-sm") }} Result card download opens once your result is published.</p>
+    {% endif %}
+    <a class="btn btn-ghost" href="{{ url_for('notifications.inbox', show='unread' if unread_count else None) }}">{{ icon("bell", "icon-sm") }} Notifications{% if unread_count %} <span class="badge badge-accent badge-plain">{{ unread_count }} new</span>{% endif %}</a>
+    <a class="btn btn-ghost" href="{{ url_for('auth.change_password') }}">{{ icon("key", "icon-sm") }} Change password</a>
+  </div>
+</section>
+
+<div class="sp-grid">
+  <div class="stack">
+    <section class="card" aria-labelledby="result-title">
+      <div class="card-head">
+        <div><h2 id="result-title">Minor project result</h2><p>{% if published %}Published {{ record.updated_at|datetime }}{% else %}Result pending · Session {{ session_name }}{% endif %}</p></div>
+        {% if published %}<span class="sp-grade-chip" aria-label="Grade {{ record.grade }}">{{ record.grade }}</span>{% endif %}
+      </div>
+      <div class="card-body">
+        {% if published %}
+        {% set tone = "is-pass" if record.status == "Pass" else "is-fail" %}
+        <div class="sp-score">
+          <div class="sp-ring {{ tone }}" role="img" aria-label="Score {{ record.percentage }} percent, grade {{ record.grade }}, {{ record.status }}">
+            <svg viewBox="0 0 120 120" aria-hidden="true" focusable="false">
+              <circle class="sp-ring-track" cx="60" cy="60" r="52" pathLength="100"/>
+              <circle class="sp-ring-value" cx="60" cy="60" r="52" pathLength="100" stroke-dasharray="{{ record.percentage }} 100" transform="rotate(-90 60 60)"/>
+            </svg>
+            <div class="sp-ring-label"><strong>{{ record.percentage }}%</strong><span>Grade {{ record.grade }}</span></div>
+          </div>
+          <dl class="sp-figures">
+            <div><dt>Marks obtained</dt><dd>{{ record.marks_obtained|num }}<span> / {{ record.total_marks|num }}</span></dd></div>
+            <div><dt>Result</dt><dd class="sp-status {{ tone }}">{{ record.status }}</dd></div>
+            <div class="sp-span"><dt>Standing</dt><dd class="sp-standing">
+              {% if standing.next_grade and record.status == "Pass" %}{{ standing.gap|num }}% more would have reached grade {{ standing.next_grade }}.
+              {% elif standing.next_grade %}{{ standing.gap|num }}% below the pass mark of {{ pass_mark|num }}%.
+              {% else %}Top grade band. Excellent work!{% endif %}
+            </dd></div>
+          </dl>
+        </div>
+
+        <div class="sp-scale" aria-label="Grade bands">
+          <div class="sp-scale-bar">
+            {% for band in standing.bands %}
+            <span class="sp-band{% if band.current %} is-current{% endif %}{% if band.grade == 'F' %} is-fail-band{% endif %}" style="flex: {{ band.width|num }} 1 0"><span>{{ band.grade }}</span></span>
+            {% endfor %}
+            <span class="sp-marker" style="left: {{ record.percentage }}%" aria-hidden="true"></span>
+          </div>
+          <div class="sp-scale-ticks" aria-hidden="true">
+            {% for band in standing.bands %}<span style="flex: {{ band.width|num }} 1 0">{{ band.start|num }}</span>{% endfor %}<span class="sp-tick-end">100</span>
+          </div>
+        </div>
+
+        <figure class="sp-remarks">
+          <figcaption>Faculty remarks{% if record.entered_by_name %} · {{ record.entered_by_name }}{% endif %}</figcaption>
+          <blockquote>{{ record.remarks or "No remarks were added to this result." }}</blockquote>
+        </figure>
+        {% else %}
+        <ol class="sp-steps" aria-label="Result progress">
+          <li class="is-done"><span class="sp-step-dot">{{ icon("check", "icon-sm") }}</span><div><strong>Registered for evaluation</strong><span>{{ record.created_at|datetime }}</span></div></li>
+          <li class="is-current" aria-current="step"><span class="sp-step-dot">{{ icon("hourglass", "icon-sm") }}</span><div><strong>Evaluation in progress</strong><span>Your faculty is reviewing your project and entering marks.</span></div></li>
+          <li><span class="sp-step-dot">{{ icon("award", "icon-sm") }}</span><div><strong>Result published</strong><span>You will get a notification, and your result card can then be downloaded as a PDF.</span></div></li>
+        </ol>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="profile-title">
+      <div class="card-head"><h2 id="profile-title">Project details</h2>{{ icon("briefcase", "icon sp-head-icon") }}</div>
+      <div class="card-body">
+        <dl class="facts">
+          <div class="span-2"><dt>Project topic</dt><dd>{{ record.topic }}</dd></div>
+          <div><dt>Company / organisation</dt><dd>{{ record.company }}</dd></div>
+          <div><dt>Course</dt><dd>{{ record.course }}</dd></div>
+          <div><dt>Roll number</dt><dd class="mono">{{ record.roll_no }}</dd></div>
+          <div><dt>Evaluated by</dt><dd>{{ record.entered_by_name or "Not yet assigned" }}</dd></div>
+        </dl>
+      </div>
+    </section>
+  </div>
+
+  <div class="stack">
+    <section class="card" aria-labelledby="recent-title">
+      <div class="card-head">
+        <div><h2 id="recent-title">Latest notifications</h2>{% if unread_count %}<p>{{ unread_count }} unread</p>{% endif %}</div>
+        <a class="btn btn-ghost btn-sm" href="{{ url_for('notifications.inbox') }}">View all</a>
+      </div>
+      {% if recent %}
+      <ul class="list">
+        {% for n in recent %}
+        <li class="notif-row{% if n.read_at is none %} is-unread{% endif %}">
+          {{ category_icon(n.category) }}
+          <div class="notif-body">
+            <a class="notif-title" href="{{ url_for('notifications.detail', notification_id=n.id) }}">{% if n.read_at is none %}<span class="sr-only">Unread: </span>{% endif %}{{ n.title }}</a>
+            <div class="notif-meta">
+              <span>{{ categories[n.category] }}</span>
+              {% if n.priority == "important" %}<span class="badge badge-accent">Important</span>{% endif %}
+              <span>· {{ n.created_at|ago }}</span>
+            </div>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+        {{ empty_state("bell", "No notifications yet", "Results and notices will appear here.") }}
+      {% endif %}
+    </section>
+
+    <section class="card" aria-labelledby="scheme-title">
+      <div class="card-head"><div><h2 id="scheme-title">Grading scheme</h2><p>Pass mark {{ pass_mark|num }}%</p></div></div>
+      <div class="card-body">
+        <table class="band-table sp-band-table">
+          <caption class="sr-only">Percentage needed for each grade{% if published %}; your grade is highlighted{% endif %}</caption>
+          <tbody>
+            {% for minimum, grade in bands %}
+            <tr{% if record.grade == grade %} class="is-current"{% endif %}><td>{{ minimum|num }}% and above</td><td>{{ grade }}</td><td>Pass{% if record.grade == grade %} <span class="sp-you">You</span>{% endif %}</td></tr>
+            {% endfor %}
+            <tr{% if record.grade == "F" %} class="is-current"{% endif %}><td>Below {{ pass_mark|num }}%</td><td>F</td><td>Fail{% if record.grade == "F" %} <span class="sp-you">You</span>{% endif %}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,103 @@
+{% from "_macros.html" import icon, csrf with context %}
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <meta name="color-scheme" content="dark light">
+  <title>{% block title %}{% endblock %} · Student Result Management System</title>
+  <script src="{{ url_for('static', filename='js/theme-init.js') }}"></script>
+  <link rel="icon" href="{{ url_for('static', filename='img/favicon.svg') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  {% block shell %}
+  {% set role = current_user.role %}
+  {% set nav = [] %}
+  {% if role == "student" %}
+    {% set nav = [("student.dashboard", "My result", "award"), ("notifications.inbox", "Notifications", "bell")] %}
+  {% else %}
+    {% set nav = [("faculty.dashboard", "Dashboard", "home"), ("faculty.students", "Students", "users"),
+                  ("notifications.announcements", "Announcements", "megaphone"), ("notifications.inbox", "Notifications", "bell")] %}
+    {% if role == "admin" %}{% set nav = nav + [("admin.users", "Staff accounts", "shield")] %}{% endif %}
+  {% endif %}
+  {% set section = request.endpoint %}
+  <header class="site-header glass">
+    <div class="header-inner">
+      <button class="icon-btn nav-toggle" type="button" data-nav-toggle aria-controls="main-nav" aria-expanded="false" aria-label="Open menu">{{ icon("menu") }}</button>
+      <a class="brand" href="{{ url_for('auth.index') }}">
+        <span class="brand-mark" aria-hidden="true">SR</span>
+        <span class="brand-text">Result Portal<small>GNIOT Institute of Professional Studies</small></span>
+      </a>
+      <nav class="main-nav" id="main-nav" aria-label="Main">
+        {% for endpoint, label, icon_name in nav %}
+          {% set active = section == endpoint or (endpoint == "faculty.students" and section in ("faculty.add_student", "faculty.edit_student", "faculty.result"))
+                          or (endpoint == "notifications.inbox" and section == "notifications.detail") %}
+          <a class="nav-link" href="{{ url_for(endpoint) }}"{% if active %} aria-current="page"{% endif %}>{{ icon(icon_name, "icon-sm") }} {{ label }}</a>
+        {% endfor %}
+      </nav>
+      <div class="header-actions">
+        <button class="icon-btn" type="button" data-theme-toggle aria-label="Switch light or dark theme">
+          <span class="theme-icon-dark">{{ icon("sun") }}</span><span class="theme-icon-light">{{ icon("moon") }}</span>
+        </button>
+        <div class="menu-wrap">
+          <button class="icon-btn" type="button" data-menu data-bell aria-controls="notif-panel" aria-expanded="false" aria-label="Notifications, {{ unread_count }} unread">
+            {{ icon("bell") }}
+            <span class="count-badge" id="notif-count"{% if not unread_count %} hidden{% endif %}>{{ unread_count if unread_count < 100 else "99+" }}</span>
+          </button>
+          <div class="dropdown glass notif-panel" id="notif-panel" role="region" aria-label="Latest notifications">
+            <div class="notif-panel-head">
+              <strong>Notifications</strong>
+              <form method="post" action="{{ url_for('notifications.mark_all_read') }}">
+                {{ csrf() }}<input type="hidden" name="next" value="{{ request.full_path.rstrip('?') }}">
+                <button class="btn btn-ghost btn-sm" type="submit" data-no-loading>{{ icon("check-all", "icon-sm") }} Mark all read</button>
+              </form>
+            </div>
+            <ul class="notif-list" id="notif-list" aria-live="polite"></ul>
+            <div class="notif-panel-foot"><a class="btn btn-secondary btn-block btn-sm" href="{{ url_for('notifications.inbox') }}">View all notifications</a></div>
+          </div>
+        </div>
+        <div class="menu-wrap">
+          <button class="user-btn" type="button" data-menu aria-controls="user-menu" aria-expanded="false" aria-label="Account menu for {{ current_user.full_name }}">
+            <span class="avatar" aria-hidden="true">{{ (current_user.full_name.split()|map("first")|join(""))[:2]|upper }}</span>
+            <span class="user-meta"><strong>{{ current_user.full_name }}</strong><span>{{ current_user.role }}</span></span>
+          </button>
+          <div class="dropdown glass" id="user-menu">
+            <div class="dropdown-item muted" aria-hidden="true">{{ icon("user", "icon-sm") }} {{ current_user.username }}</div>
+            <div class="dropdown-sep"></div>
+            <a class="dropdown-item" href="{{ url_for('auth.change_password') }}">{{ icon("key", "icon-sm") }} Change password</a>
+            <form method="post" action="{{ url_for('auth.logout') }}">
+              {{ csrf() }}
+              <button class="dropdown-item" type="submit" data-no-loading>{{ icon("logout", "icon-sm") }} Log out</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+  {% include "_flashes.html" %}
+  <main class="page" id="main">
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="site-footer">Student Result Management System · BCA Minor Project 2026-2027 · GNIOT Institute of Professional Studies, Greater Noida</footer>
+  {% endblock %}
+
+  <dialog class="dialog glass" id="confirm-dialog" aria-labelledby="confirm-title">
+    <form method="dialog">
+      <div class="dialog-body">
+        <span class="dialog-icon">{{ icon("alert") }}</span>
+        <h2 id="confirm-title" data-confirm-title>Are you sure?</h2>
+        <p class="muted" data-confirm-text></p>
+      </div>
+      <div class="dialog-actions">
+        <button class="btn btn-secondary" value="cancel" data-no-loading autofocus>Cancel</button>
+        <button class="btn btn-danger" value="ok" data-confirm-ok data-no-loading>Delete</button>
+      </div>
+    </form>
+  </dialog>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+{% from "student/_student.html" import student_css, printer_icon %}
+{% block title %}Result card{% endblock %}
+{% block content %}
+{{ student_css() }}
+<div class="page-head sp-no-print">
+  <div>
+    <a class="breadcrumb" href="{{ url_for('student.dashboard') }}">{{ icon("arrow-left", "icon-sm") }} My result</a>
+    <h1>Result card</h1>
+    <p>Print it or save it as a PDF for your records.</p>
+  </div>
+  <div class="page-actions">
+    <button class="btn btn-secondary" type="button" data-print>{{ printer_icon() }} Print</button>
+    <a class="btn btn-primary" href="{{ url_for('student.result_pdf') }}" download>{{ icon("download", "icon-sm") }} Download PDF</a>
+  </div>
+</div>
+
+<article class="card sp-sheet" aria-labelledby="sheet-title">
+  <header class="sp-sheet-head">
+    <span class="logo-tile"><img src="{{ url_for('static', filename='img/gips.png') }}" alt="GNIOT Institute of Professional Studies" width="151" height="48"></span>
+    <div class="sp-sheet-org">
+      <strong>GNIOT Institute of Professional Studies, Greater Noida</strong>
+      <span>Affiliated to Chaudhary Charan Singh University (CCSU), Meerut</span>
+    </div>
+    <span class="logo-tile"><img src="{{ url_for('static', filename='img/ccsu.png') }}" alt="Chaudhary Charan Singh University, Meerut" width="48" height="48"></span>
+  </header>
+  <div class="sp-sheet-title">
+    <h2 id="sheet-title">Minor project result card</h2>
+    <p>Academic session {{ session_name }}</p>
+  </div>
+
+  <h3 class="sp-sheet-section">Student details</h3>
+  <dl class="sp-sheet-details">
+    <div><dt>Name of student</dt><dd>{{ record.student_name }}</dd></div>
+    <div><dt>Roll number</dt><dd class="mono">{{ record.roll_no }}</dd></div>
+    <div><dt>Course</dt><dd>{{ record.course }}</dd></div>
+    <div><dt>Session</dt><dd>{{ session_name }}</dd></div>
+    <div class="sp-wide"><dt>Company / organisation</dt><dd>{{ record.company }}</dd></div>
+    <div class="sp-wide"><dt>Project topic</dt><dd>{{ record.topic }}</dd></div>
+  </dl>
+
+  <h3 class="sp-sheet-section">Result summary</h3>
+  <div class="sp-sheet-summary">
+    <div><span>Marks obtained</span><strong>{{ record.marks_obtained|num }} / {{ record.total_marks|num }}</strong></div>
+    <div><span>Percentage</span><strong>{{ record.percentage }}%</strong></div>
+    <div><span>Grade</span><strong>{{ record.grade }}</strong></div>
+    <div class="sp-sheet-result {{ 'is-pass' if record.status == 'Pass' else 'is-fail' }}"><span>Result</span><strong>{{ record.status|upper }}</strong></div>
+  </div>
+
+  <h3 class="sp-sheet-section">Statement of marks</h3>
+  <div class="sp-sheet-table-wrap">
+    <table class="sp-sheet-table">
+      <thead><tr><th scope="col">Assessment</th><th scope="col" class="num">Max.</th><th scope="col" class="num">Obtained</th><th scope="col" class="num">Grade</th></tr></thead>
+      <tbody><tr><td>Minor project: {{ record.topic }}</td><td class="num">{{ record.total_marks|num }}</td><td class="num">{{ record.marks_obtained|num }}</td><td class="num">{{ record.grade }}</td></tr></tbody>
+      <tfoot><tr><th scope="row">Total ({{ record.percentage }}%)</th><td class="num">{{ record.total_marks|num }}</td><td class="num">{{ record.marks_obtained|num }}</td><td class="num">{{ record.grade }}</td></tr></tfoot>
+    </table>
+  </div>
+
+  <h3 class="sp-sheet-section">Faculty remarks</h3>
+  <p class="sp-sheet-remarks">{{ record.remarks or "No remarks were recorded." }}</p>
+
+  <div class="sp-sheet-foot-grid">
+    <div>
+      <h3 class="sp-sheet-section">Grading scale</h3>
+      <table class="sp-sheet-table sp-sheet-scale">
+        <thead><tr><th scope="col">Percentage</th><th scope="col">Grade</th><th scope="col">Result</th></tr></thead>
+        <tbody>
+          {% for minimum, grade in bands %}
+          <tr{% if record.grade == grade %} class="is-current"{% endif %}><td>{{ minimum|num }}% and above</td><td>{{ grade }}</td><td>Pass</td></tr>
+          {% endfor %}
+          <tr{% if record.grade == "F" %} class="is-current"{% endif %}><td>Below {{ pass_mark|num }}%</td><td>F</td><td>Fail</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <dl class="sp-sheet-facts">
+      <div><dt>Evaluated by</dt><dd>{{ record.entered_by_name or "Department faculty" }}</dd></div>
+      <div><dt>Result published / last updated</dt><dd>{{ record.updated_at|datetime }}</dd></div>
+      <div><dt>Pass requirement</dt><dd>{{ pass_mark|num }}% of total marks</dd></div>
+      <div><dt>Document reference</dt><dd class="mono">SRMS/{{ session_name }}/{{ record.roll_no }}</dd></div>
+    </dl>
+  </div>
+
+  <footer class="sp-sheet-footer">
+    This is a computer-generated result card from the Student Result Management System and does not require a signature.
+    Generated on {{ generated_at|datetime }}.
+  </footer>
+</article>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, category_icon, csrf with context %}
+{% block title %}{{ item.title }}{% endblock %}
+{% block content %}
+<a class="breadcrumb" href="{{ url_for('notifications.inbox') }}">{{ icon("arrow-left", "icon-sm") }} All notifications</a>
+<article class="card">
+  <div class="card-body stack">
+    <div class="notif-heading">
+      {{ category_icon(item.category) }}
+      <div class="notif-body">
+        <h1>{{ item.title }}</h1>
+        <div class="notif-meta">
+          <span class="badge badge-muted badge-plain">{{ categories[item.category] }}</span>
+          {% if item.priority == "important" %}<span class="badge badge-accent">Important</span>{% endif %}
+          <span>{{ item.created_at|datetime }}</span>
+          {% if item.author %}<span>· {{ item.author }}</span>{% endif %}
+        </div>
+      </div>
+    </div>
+    <p class="message-body">{{ item.message }}</p>
+    <div class="btn-row">
+      {% if item.category == "result" and current_user.role == "student" %}
+      <a class="btn btn-primary" href="{{ url_for('student.dashboard') }}">{{ icon("award", "icon-sm") }} View my result</a>
+      {% endif %}
+      <form method="post" action="{{ url_for('notifications.mark_unread', notification_id=item.id) }}">
+        {{ csrf() }}<input type="hidden" name="next" value="{{ url_for('notifications.inbox') }}">
+        <button class="btn btn-ghost" type="submit">{{ icon("mail-open", "icon-sm") }} Mark as unread</button>
+      </form>
+    </div>
+  </div>
+</article>
+{% endblock %}
