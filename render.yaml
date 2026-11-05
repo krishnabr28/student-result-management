@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: student-result-management
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python setup_db.py && gunicorn --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 60 --access-logfile - "app:create_app()"
+    healthCheckPath: /login
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_NAME
+        value: internship_result_db
+      - key: SECRET_KEY
+        generateValue: true
+      - key: SHOW_DEMO_ACCOUNTS
+        value: "true"
+      - key: SESSION_COOKIE_SECURE
+        value: "true"

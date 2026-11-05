@@ -22,6 +22,7 @@ def load_config():
         "SECRET_KEY": secret_key,
         "SESSION_COOKIE_HTTPONLY": True,
         "SESSION_COOKIE_SAMESITE": "Lax",
+        "SESSION_COOKIE_SECURE": os.environ.get("SESSION_COOKIE_SECURE", "false").lower() in ("1", "true", "yes"),
         "PERMANENT_SESSION_LIFETIME": 60 * 60 * 8,
         "MAX_CONTENT_LENGTH": 1024 * 1024,
         "SHOW_DEMO_ACCOUNTS": os.environ.get("SHOW_DEMO_ACCOUNTS", "false").lower() in ("1", "true", "yes"),
